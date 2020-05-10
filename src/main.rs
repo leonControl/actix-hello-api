@@ -1,4 +1,4 @@
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{middleware, web, App, HttpRequest, HttpServer, Responder};
 use env_logger;
 use std::{env, io};
 
@@ -13,6 +13,11 @@ fn config(cfg: &mut web::ServiceConfig) {
     .service(handlers::get_name_and_count);
 }
 
+async fn greet(req: HttpRequest) -> impl Responder {
+  let name = req.match_info().get("name").unwrap_or("World");
+  format!("Hello {}!", &name)
+}
+
 #[actix_rt::main]
 async fn main() -> io::Result<()> {
   env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
@@ -25,6 +30,7 @@ async fn main() -> io::Result<()> {
       // register HTTP requests handlers
       .service(web::scope("/hello").configure(config))
       .service(handlers::hello_more)
+      .route("/greet/{name}", web::get().to(greet))
   })
   .bind("127.0.0.1:8088")?
   .run()
